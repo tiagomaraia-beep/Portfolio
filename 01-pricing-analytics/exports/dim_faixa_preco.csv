@@ -1,0 +1,8 @@
+sk_faixa_preco,faixa_preco,ordem_faixa,limite_inferior,limite_superior
+0,"Sem preço informado",0,,
+1,"Até US$ 9.99",1,0.0,9.99
+2,"US$ 10 a 19.99",2,10.0,19.99
+3,"US$ 20 a 49.99",3,20.0,49.99
+4,"US$ 50 a 99.99",4,50.0,99.99
+5,"US$ 100 a 199.99",5,100.0,199.99
+6,"US$ 200 ou mais",6,200.0,

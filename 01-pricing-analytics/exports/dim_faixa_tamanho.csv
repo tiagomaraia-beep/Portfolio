@@ -1,0 +1,7 @@
+sk_faixa_tamanho,faixa_tamanho,ordem_faixa,pecas_minimo,pecas_maximo
+0,"Peças não informadas",0,,
+1,"Até 99 peças",1,0,99
+2,"100 a 249 peças",2,100,249
+3,"250 a 499 peças",3,250,499
+4,"500 a 999 peças",4,500,999
+5,"1.000 peças ou mais",5,1000,

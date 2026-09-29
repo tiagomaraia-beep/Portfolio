@@ -1,0 +1,866 @@
+// =============================================================================
+// medidas.dax — Showcase 2, pricing analytics de catálogo
+// Escrito sobre a VERSÃO 3 dos exports (deflação, dim_faixa_tamanho, flag na fato).
+// Todas as medidas moram na tabela _Medidas. Nenhuma mora na fato.
+//
+// COMO USAR: cada bloco é UMA medida. Copie da linha do nome até o último RETURN e
+// cole na barra de fórmulas do Power BI (Página Inicial > Nova medida), uma por vez.
+// Os comentários `//` vão junto — comentário dentro da medida é documentação que
+// viaja com o arquivo.
+//
+// ORDEM DE COLAGEM: siga a ordem do arquivo. As pastas 00, 01 e 02 são a base de
+// que todo o resto depende.
+//
+// CONVENÇÃO: cada medida traz duas linhas dizendo em que contexto de filtro ela foi
+// pensada. Onde há CALCULATE, há uma linha explicando o que ele faz com o contexto
+// NAQUELE caso — não em geral.
+//
+// =============================================================================
+// AS DUAS REGRAS QUE GOVERNAM OS NOMES DESTE ARQUIVO
+//
+// 1) NÃO EXISTE MEDIDA DE PREÇO POR PEÇA SEM ESCOPO.
+//    Toda medida de preço nasce com KEEPFILTERS(flag_escopo_pricing = 1) dentro, e as
+//    colunas cruas da fato estão ocultas. O número fora de escopo não é expressável.
+//
+// 2) NÃO EXISTE MEDIDA DE PREÇO SEM BASE DECLARADA NO NOME.
+//    Toda medida de preço termina em "(nominal)" ou "(real, USD 2022)". Não há
+//    "Preço por peça" neutro para alguém arrastar sem pensar — porque leitura neutra
+//    não existe: a mesma série dá índice 103,9 nominal e 73,6 real em 2022.
+//    É a mesma ideia da regra 1, aplicada à unidade em vez do universo.
+//
+// OS QUATRO VERBOS DE CONTEXTO usados aqui:
+//   • filtro booleano de coluna, ex. `dim_tema[flag_licenciado] = 1`
+//       SUBSTITUI o que havia naquela coluna. O resto do contexto fica.
+//   • KEEPFILTERS ( <mesmo filtro> )
+//       INTERSECTA em vez de substituir. Para restrição minha que não pode apagar
+//       uma escolha do usuário na mesma coluna.
+//   • REMOVEFILTERS ( <tabela> )
+//       APAGA o filtro da tabela inteira. Para sair da linha do visual e olhar outro
+//       ano, ou o todo (denominador de share).
+//   • USERELATIONSHIP ( <col dim>, <col fato> )
+//       TROCA por qual relação o filtro viaja. Aqui só serve para uma coisa: fazer
+//       dim_faixa_preco classificar pelo preço REAL em vez do nominal.
+//
+// PASTAS DE EXIBIÇÃO (campo `Pasta de exibição` de cada medida):
+//   00 Escopo · 01 Preço nominal · 02 Preço real · 03 Minifigs · 04 Licença
+//   05 Tempo · 06 Mix · 07 Inflação e categoria · 08 Qualidade · 09 Rótulos
+// =============================================================================
+
+
+// =============================================================================
+// 00 ESCOPO — quantos sets estão em jogo, e em qual universo
+// =============================================================================
+
+// Pasta: 00 Escopo · Formato: Número inteiro, separador de milhar
+Sets =
+SUM ( fato_sets[qt_sets] )
+// CONTEXTO: visuais de MIX, ROTAÇÃO e COBERTURA, sobre as 18.457 linhas.
+// Não aplica escopo nenhum — nunca use num visual de preço: conta set sem preço.
+
+
+// Pasta: 00 Escopo · Formato: Número inteiro, separador de milhar
+Sets no escopo de preço =
+CALCULATE (
+    [Sets],
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: denominador de TODO visual de preço. Sem filtro externo devolve 4.626.
+// Serve também de contagem declarada no título e na sentinela de escopo.
+// CALCULATE ACRESCENTA a restrição de escopo ao contexto que o visual já entregou
+// (ano, tema, faixa) — e KEEPFILTERS faz a interseção com um filtro que o usuário
+// porventura tenha posto na mesma coluna, em vez de trocá-lo pelo meu.
+
+
+// Pasta: 00 Escopo · Formato: Porcentagem, 1 casa
+Cobertura do escopo de preço =
+DIVIDE ( [Sets no escopo de preço], [Sets] )
+// CONTEXTO: cartão da página de qualidade do dado, sem filtro — devolve 25,1%.
+// Num recorte por década mostra o quanto daquela década é analisável em preço.
+
+
+// Pasta: 00 Escopo · Formato: Número inteiro, separador de milhar
+Sets com preço =
+CALCULATE (
+    [Sets],
+    KEEPFILTERS ( fato_sets[flag_tem_preco] = 1 )
+)
+// CONTEXTO: só a página de qualidade do dado (cobertura da fonte por ano/década).
+// Não é escopo de análise: inclui Gear, sets de 1 peça e anos anteriores a 2007.
+
+
+// Pasta: 00 Escopo · Formato: Porcentagem, 1 casa
+Cobertura de preço da fonte =
+DIVIDE ( [Sets com preço], [Sets] )
+// CONTEXTO: coluna por década ou por ano na página de qualidade do dado.
+// É a métrica que justifica o corte em 2007 (0,0% nos anos 70 e 80; 66,6% em 2007).
+
+
+// =============================================================================
+// 01 PREÇO NOMINAL — dólar corrente do ano de lançamento
+// Responde "que arquitetura de preço o comprador via na prateleira naquele ano".
+// É a base certa para ponto de preço e psicologia de etiqueta (o .99 só existe aqui).
+// =============================================================================
+
+// Pasta: 01 Preço nominal · Formato: Moeda, 2 casas, símbolo US$
+Preço de lista somado (nominal) =
+CALCULATE (
+    SUM ( fato_sets[vl_preco_usd] ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: numerador das razões nominais e conferência do escopo (US$ 214.853,10).
+// Não é receita — é soma de preço de tabela de lançamento, sem unidade vendida.
+
+
+// Pasta: 01 Preço nominal · Formato: Número inteiro, separador de milhar
+Peças somadas =
+CALCULATE (
+    SUM ( fato_sets[qt_pecas] ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: denominador do preço por peça nas DUAS bases (1.986.433 no escopo).
+// Peça não tem inflação, então esta medida é única e serve às duas.
+
+
+// Pasta: 01 Preço nominal · Formato: Personalizado `0.0000`
+Preço por peça (nominal) =
+CALCULATE (
+    DIVIDE (
+        SUM ( fato_sets[vl_preco_usd] ),
+        SUM ( fato_sets[qt_pecas] )
+    ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: série nominal da página de unit economics, sempre ao lado da real.
+// Sozinha ela ENGANA: sobe 3,9% de 2007 a 2022 e parece estabilidade de preço.
+// CALCULATE aplica o escopo ANTES da divisão: as duas somas já são calculadas dentro
+// das 4.626 linhas. Se as somas estivessem em VAR do lado de fora do CALCULATE, elas
+// seriam avaliadas no contexto do visual e o escopo não valeria — é o erro de contexto
+// mais fácil de cometer aqui, e é por isso que esta medida não usa VAR.
+// NUNCA troque por AVERAGEX ( fato_sets ; DIVIDE ( [vl_preco_usd] ; [qt_pecas] ) ):
+// isso é média das razões, devolve 0,1657 no mesmo escopo — 53% acima — porque daria
+// a um set Duplo de 20 peças o mesmo peso que ao Millennium Falcon de 7.541.
+
+
+// Pasta: 01 Preço nominal · Formato: Moeda, 2 casas, símbolo US$
+Preço médio por set (nominal) =
+DIVIDE ( [Preço de lista somado (nominal)], [Sets no escopo de preço] )
+// CONTEXTO: ticket médio em dólar corrente. Numerador e denominador já são escopados,
+// então a razão herda o escopo sem precisar de CALCULATE próprio.
+// Acompanhe SEMPRE da mediana: a distribuição é assimétrica à direita.
+
+
+// Pasta: 01 Preço nominal · Formato: Moeda, 2 casas, símbolo US$
+Mediana de preço (nominal) =
+CALCULATE (
+    MEDIANX ( fato_sets, fato_sets[vl_preco_usd] ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: ao lado do preço médio, sempre. É a estatística honesta deste catálogo.
+// MEDIANX itera a fato no contexto atual; o CALCULATE garante que itere só o escopo.
+// Mediana não é reagregável — o total NÃO é a média das medianas das linhas, e isso
+// é correto, não defeito.
+
+
+// Pasta: 01 Preço nominal · Formato: Número inteiro
+Peças por set =
+DIVIDE ( [Peças somadas], [Sets no escopo de preço] )
+// CONTEXTO: a outra metade do achado 1 — o set cresceu 68,3% em peças.
+// Também é única para as duas bases: peça não deflaciona. No escopo devolve 429.
+
+
+// Pasta: 01 Preço nominal · Formato: Personalizado `0.0000`
+Preço por peça (nominal, ex-pré-escolar e júnior) =
+CALCULATE (
+    [Preço por peça (nominal)],
+    FILTER (
+        VALUES ( dim_tema[grupo_tema] ),
+        NOT ( dim_tema[grupo_tema] IN { "Pre-school", "Junior" } )
+    )
+)
+// CONTEXTO: qualquer comparação de preço por peça ENTRE linhas de produto.
+// Sem ela, Duplo (0,6825/peça contra 0,1037) sequestra o corte.
+// CALCULATE recebe uma TABELA como filtro. VALUES é avaliado no contexto que o visual
+// entregou — já são só os grupos visíveis ali — e o FILTER tira dois deles. Como o
+// resultado é subconjunto do que já havia, o efeito é interseção e dispensa KEEPFILTERS.
+
+
+// =============================================================================
+// 02 PREÇO REAL — dólares constantes de 2022 (CPI-U, BLS `CUUR0000SA0`)
+// Responde "ficou mais caro para quem compra". É a base certa para série temporal.
+//
+// A deflação JÁ ESTÁ MATERIALIZADA em fato_sets[vl_preco_usd_2022], linha a linha,
+// na carga do SQL. Por isso toda medida real é um SUM simples, igual à nominal.
+// NÃO refaça a deflação em DAX com
+//   SUMX ( fato_sets ; fato_sets[vl_preco_usd] * RELATED ( dim_calendario[fator_deflator_base2022] ) )
+// — funciona, mas é iteração em contexto de linha, fácil de escrever errado, cara de
+// auditar, e duplicaria uma conta que já está conferida na origem.
+// =============================================================================
+
+// Pasta: 02 Preço real · Formato: Moeda, 2 casas, símbolo US$
+Preço de lista somado (real, USD 2022) =
+CALCULATE (
+    SUM ( fato_sets[vl_preco_usd_2022] ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: numerador das razões reais. No escopo devolve US$ 255.395,21 contra
+// US$ 214.853,10 nominais — a diferença é o poder de compra de quinze anos.
+
+
+// Pasta: 02 Preço real · Formato: Personalizado `0.0000`
+Preço por peça (real, USD 2022) =
+CALCULATE (
+    DIVIDE (
+        SUM ( fato_sets[vl_preco_usd_2022] ),
+        SUM ( fato_sets[qt_pecas] )
+    ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: a medida central da peça. Série por ano, por tema, por faixa de tamanho.
+// No escopo devolve 0,1286; em 2007 vale 0,1392 e em 2022, 0,1025 — queda de 26,4%.
+// Mesma mecânica da nominal: o escopo entra antes da divisão. A única diferença é a
+// coluna somada. E é razão dos totais em cima de valores já deflacionados linha a
+// linha — deflacionar o agregado com um fator médio daria 0,1333, 3,7% errado, pelo
+// mesmo motivo que a média das razões erra: ignora que os anos pesam diferente.
+
+
+// Pasta: 02 Preço real · Formato: Moeda, 2 casas, símbolo US$
+Preço médio por set (real, USD 2022) =
+DIVIDE ( [Preço de lista somado (real, USD 2022)], [Sets no escopo de preço] )
+// CONTEXTO: ticket médio em poder de compra. 2007 = US$ 54,89; 2022 = US$ 67,96.
+// +23,8% real contra +74,8% nominal: metade do "aumento" nominal é só inflação.
+
+
+// Pasta: 02 Preço real · Formato: Moeda, 2 casas, símbolo US$
+Mediana de preço (real, USD 2022) =
+CALCULATE (
+    MEDIANX ( fato_sets, fato_sets[vl_preco_usd_2022] ),
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: o par mais eloquente do relatório. A mediana real CAI 5,5% (42,33 → 39,99)
+// enquanto a média real SOBE 23,8%: o set típico não encareceu, a cauda de cima engordou.
+
+
+// Pasta: 02 Preço real · Formato: Personalizado `0.0000`
+Preço por peça (real, ex-pré-escolar e júnior) =
+CALCULATE (
+    [Preço por peça (real, USD 2022)],
+    FILTER (
+        VALUES ( dim_tema[grupo_tema] ),
+        NOT ( dim_tema[grupo_tema] IN { "Pre-school", "Junior" } )
+    )
+)
+// CONTEXTO: gêmea real do controle de Duplo. Mesma mecânica, trocando a medida base.
+
+
+// =============================================================================
+// 03 MINIFIGS
+// =============================================================================
+
+// Pasta: 03 Minifigs · Formato: Decimal, 2 casas
+Minifigs por mil peças =
+CALCULATE (
+    DIVIDE ( SUM ( fato_sets[qt_minifigs] ), SUM ( fato_sets[qt_pecas] ) ) * 1000,
+    KEEPFILTERS ( fato_sets[flag_escopo_pricing] = 1 )
+)
+// CONTEXTO: comparação licenciado × próprio e série por ano. Não tem base nominal nem
+// real — não há dinheiro na conta, então inflação não entra.
+// CALCULATE aplica o escopo antes da divisão, pelo mesmo motivo do preço por peça.
+// RESSALVA: vazio da origem virou 0 na fato (28,1% do escopo), então isto é um PISO.
+
+
+// =============================================================================
+// 04 LICENÇA
+// Regra de leitura: DENTRO de um ano, nominal e real dão o mesmo prêmio — os dois
+// lados levam o mesmo deflator e ele cancela na razão (conferido em 2013, 2017,
+// 2021 e 2022). FORA de um ano, não: o set licenciado é sistematicamente mais novo
+// (ano médio 2016–2017) que o próprio (2014–2015), e deflacionar levanta mais o lado
+// velho. Por isso existem as duas famílias abaixo.
+// =============================================================================
+
+// Pasta: 04 Licença · Formato: Personalizado `0.0000`
+Preço por peça — licenciado (nominal) =
+CALCULATE (
+    [Preço por peça (nominal)],
+    dim_tema[flag_licenciado] = 1
+)
+// CONTEXTO: cartão de prêmio e gráfico por faixa de tamanho. Devolve o número dos
+// licenciados MESMO na linha "Próprio" — é o que permite comparar em qualquer recorte.
+// CALCULATE com filtro booleano SUBSTITUI o filtro da coluna flag_licenciado: o que o
+// visual disse sobre licenciamento é descartado, o resto do contexto (ano, faixa de
+// tamanho, escopo) continua valendo. Com KEEPFILTERS aqui, a medida devolveria vazio
+// na linha "Próprio", porque a interseção seria vazia.
+
+
+// Pasta: 04 Licença · Formato: Personalizado `0.0000`
+Preço por peça — próprio (nominal) =
+CALCULATE (
+    [Preço por peça (nominal)],
+    dim_tema[flag_licenciado] = 0
+)
+// CONTEXTO: par da medida acima. Mesma substituição de filtro, outro lado.
+// No total do escopo: 0,1080 contra 0,1084 do licenciado.
+
+
+// Pasta: 04 Licença · Formato: Porcentagem, 1 casa
+Prêmio de licença por peça (nominal) =
+VAR Licenciado = [Preço por peça — licenciado (nominal)]
+VAR Proprio = [Preço por peça — próprio (nominal)]
+RETURN
+    DIVIDE ( Licenciado - Proprio, Proprio )
+// CONTEXTO: cartão da página de licença e gráfico por faixa de tamanho.
+// No agregado devolve +0,4% — ruído. Por faixa de tamanho revela as duas armadilhas:
+// −36,4% nos sets pequenos (é Duplo) e +22,9% nos grandes (é a linha adulta própria).
+
+
+// Pasta: 04 Licença · Formato: Personalizado `0.0000`
+Preço por peça — licenciado (real, USD 2022) =
+CALCULATE (
+    [Preço por peça (real, USD 2022)],
+    dim_tema[flag_licenciado] = 1
+)
+// CONTEXTO: gêmea real. Mesma substituição de filtro, medida base diferente.
+
+
+// Pasta: 04 Licença · Formato: Personalizado `0.0000`
+Preço por peça — próprio (real, USD 2022) =
+CALCULATE (
+    [Preço por peça (real, USD 2022)],
+    dim_tema[flag_licenciado] = 0
+)
+// CONTEXTO: par da anterior.
+
+
+// Pasta: 04 Licença · Formato: Porcentagem, 1 casa
+Prêmio de licença por peça (real, USD 2022) =
+VAR Licenciado = [Preço por peça — licenciado (real, USD 2022)]
+VAR Proprio = [Preço por peça — próprio (real, USD 2022)]
+RETURN
+    DIVIDE ( Licenciado - Proprio, Proprio )
+// CONTEXTO: coluna "prêmio real" do gráfico por faixa de tamanho, ao lado do nominal.
+// A diferença entre as duas colunas NÃO é erro: é o efeito de composição temporal, e
+// mostrá-la lado a lado é o que prova que o analista sabe disso.
+
+
+// Pasta: 04 Licença · Formato: Porcentagem, 1 casa
+Prêmio de licença por set (nominal) =
+VAR Licenciado = CALCULATE ( [Preço médio por set (nominal)], dim_tema[flag_licenciado] = 1 )
+VAR Proprio = CALCULATE ( [Preço médio por set (nominal)], dim_tema[flag_licenciado] = 0 )
+RETURN
+    DIVIDE ( Licenciado - Proprio, Proprio )
+// CONTEXTO: ao lado do prêmio por peça, para mostrar que são coisas diferentes.
+// +18,7% por set contra +0,4% por peça — a diferença É a história da página.
+
+
+// Pasta: 04 Licença · Formato: Porcentagem, 1 casa
+Prêmio de minifig (por mil peças) =
+VAR Licenciado = CALCULATE ( [Minifigs por mil peças], dim_tema[flag_licenciado] = 1 )
+VAR Proprio = CALCULATE ( [Minifigs por mil peças], dim_tema[flag_licenciado] = 0 )
+RETURN
+    DIVIDE ( Licenciado - Proprio, Proprio )
+// CONTEXTO: cartão da página de licença com filtro de visual ano >= 2018 — devolve
+// +47%. É onde a licença se paga: personagem, não preço do tijolo.
+
+
+// =============================================================================
+// 05 TEMPO — sem inteligência de tempo, por decisão de modelagem
+// dim_calendario tem grão ANUAL e nenhuma coluna de data. SAMEPERIODLASTYEAR,
+// DATEADD e TOTALYTD não têm sobre o que operar. Deslocamento é aritmética.
+// =============================================================================
+
+// Pasta: 05 Tempo · Formato: Número inteiro, SEM separador de milhar
+Primeiro ano com preço =
+CALCULATE (
+    MIN ( dim_calendario[ano] ),
+    REMOVEFILTERS ( dim_calendario ),
+    dim_calendario[flag_preco_confiavel] = 1
+)
+// CONTEXTO: base do índice e dos comparativos "vs. primeiro ano". Devolve 2007 e não
+// muda quando o visual filtra ano — é por isso que serve de base fixa.
+// REMOVEFILTERS apaga o filtro da TABELA calendário inteira (ano, década, rótulo);
+// depois o filtro booleano escreve a condição num contexto limpo.
+
+
+// Pasta: 05 Tempo · Formato: Número inteiro, SEM separador de milhar
+Último ano com preço =
+CALCULATE (
+    MAX ( dim_calendario[ano] ),
+    REMOVEFILTERS ( dim_calendario ),
+    dim_calendario[flag_preco_confiavel] = 1
+)
+// CONTEXTO: cartões do resumo, que precisam do último ano sem depender de alguém
+// lembrar de filtrar 2022. Se a base ganhar 2023, muda sozinho.
+
+
+// Pasta: 05 Tempo · Formato: Personalizado `0.0000`
+Preço por peça (real) — ano anterior =
+VAR AnoAtual = SELECTEDVALUE ( dim_calendario[ano] )
+VAR Anterior =
+    CALCULATE (
+        [Preço por peça (real, USD 2022)],
+        REMOVEFILTERS ( dim_calendario ),
+        dim_calendario[ano] = AnoAtual - 1
+    )
+RETURN
+    IF ( NOT ISBLANK ( AnoAtual ), Anterior )
+// CONTEXTO: insumo da variação a/a. Em branco na linha de total, de propósito:
+// "ano anterior" não existe quando há dezesseis anos na mesma linha.
+// AnoAtual é VAR e é avaliado ONDE ESTÁ ESCRITO — fora do CALCULATE, no contexto que o
+// visual entregou. Por isso ainda vale 2014 na linha de 2014, mesmo que o CALCULATE
+// logo abaixo apague o calendário inteiro. Invertida essa ordem, a medida devolve o
+// mesmo valor em todas as linhas: é o erro clássico de contexto de filtro.
+// REMOVEFILTERS tem de ser da tabela, não da coluna: se o visual agrupar por
+// rotulo_decada, limpar só `ano` deixaria a década presa e 2009 não enxergaria 2008.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação a/a do preço por peça (real) =
+VAR Atual = [Preço por peça (real, USD 2022)]
+VAR Anterior = [Preço por peça (real) — ano anterior]
+RETURN
+    DIVIDE ( Atual - Anterior, Anterior )
+// CONTEXTO: colunas por ano na página de unit economics. Só faz sentido com `ano` no
+// eixo; em qualquer outro agrupamento devolve em branco, que é o comportamento certo.
+
+
+// Pasta: 05 Tempo · Formato: Decimal, 1 casa
+Índice de preço por peça (real, primeiro ano = 100) =
+VAR Base =
+    CALCULATE (
+        [Preço por peça (real, USD 2022)],
+        REMOVEFILTERS ( dim_calendario ),
+        dim_calendario[ano] = [Primeiro ano com preço]
+    )
+RETURN
+    DIVIDE ( [Preço por peça (real, USD 2022)], Base ) * 100
+// CONTEXTO: a linha principal do gráfico indexado do resumo. Indexar é o que permite
+// pôr preço por peça, preço médio e peças por set no MESMO eixo — escalas diferentes,
+// base comum, sem eixo duplo.
+// O CALCULATE sai da linha do ano para buscar 2007 e volta; o contexto de tema ou faixa
+// continua valendo dos dois lados, então o índice respeita o recorte do visual.
+// 2022 devolve 73,6. Pico real em 2013 (121,0), queda contínua desde então.
+
+
+// Pasta: 05 Tempo · Formato: Decimal, 1 casa
+Índice de preço por peça (nominal, primeiro ano = 100) =
+VAR Base =
+    CALCULATE (
+        [Preço por peça (nominal)],
+        REMOVEFILTERS ( dim_calendario ),
+        dim_calendario[ano] = [Primeiro ano com preço]
+    )
+RETURN
+    DIVIDE ( [Preço por peça (nominal)], Base ) * 100
+// CONTEXTO: a linha-sombra do mesmo gráfico, para o leitor ver a diferença entre as
+// duas leituras num relance. 2022 devolve 103,9 contra 73,6 da real.
+// Mesma mecânica de deslocamento; muda só a medida indexada.
+
+
+// Pasta: 05 Tempo · Formato: Decimal, 1 casa
+Índice de preço médio por set (real, primeiro ano = 100) =
+VAR Base =
+    CALCULATE (
+        [Preço médio por set (real, USD 2022)],
+        REMOVEFILTERS ( dim_calendario ),
+        dim_calendario[ano] = [Primeiro ano com preço]
+    )
+RETURN
+    DIVIDE ( [Preço médio por set (real, USD 2022)], Base ) * 100
+// CONTEXTO: segunda linha do gráfico indexado. 2022 devolve 123,8.
+
+
+// Pasta: 05 Tempo · Formato: Decimal, 1 casa
+Índice de peças por set (primeiro ano = 100) =
+VAR Base =
+    CALCULATE (
+        [Peças por set],
+        REMOVEFILTERS ( dim_calendario ),
+        dim_calendario[ano] = [Primeiro ano com preço]
+    )
+RETURN
+    DIVIDE ( [Peças por set], Base ) * 100
+// CONTEXTO: terceira linha do gráfico indexado. 2022 devolve 168,3.
+// As três juntas são o achado 1 inteiro num visual só: 73,6 · 123,8 · 168,3 —
+// o tijolo barateando, o set encarecendo e o set crescendo, ao mesmo tempo.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação do preço por peça vs. primeiro ano (real) =
+VAR Base =
+    CALCULATE ( [Preço por peça (real, USD 2022)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( [Preço por peça (real, USD 2022)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: o delta do cartão-manchete. Devolve −26,4% e NÃO depende de filtro de ano:
+// os dois CALCULATE vão buscar 2007 e 2022 onde quer que o cartão esteja.
+// Cartão sem comparação é número solto; é esta medida que vira o subtítulo do cartão.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação do preço por peça vs. primeiro ano (nominal) =
+VAR Base =
+    CALCULATE ( [Preço por peça (nominal)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( [Preço por peça (nominal)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: o contraponto no mesmo cartão. +3,9% contra −26,4%: as duas frases são
+// verdadeiras e dizem coisas opostas. Mostrar as duas é o ponto da página.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação do preço médio por set vs. primeiro ano (real) =
+VAR Base =
+    CALCULATE ( [Preço médio por set (real, USD 2022)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( [Preço médio por set (real, USD 2022)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: delta do cartão de ticket médio. Devolve +23,8%.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação do preço médio por set vs. primeiro ano (nominal) =
+VAR Base =
+    CALCULATE ( [Preço médio por set (nominal)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( [Preço médio por set (nominal)], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: o par nominal. +74,8% — e a diferença para os +23,8% reais é exatamente
+// "metade do aumento de preço que aparece no nominal é só inflação".
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação de peças por set vs. primeiro ano =
+VAR Base =
+    CALCULATE ( [Peças por set], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( [Peças por set], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: delta do cartão de tamanho de set. Devolve +68,3%, e não tem base nominal
+// nem real porque peça não deflaciona.
+
+
+// Pasta: 05 Tempo · Formato: Porcentagem, 1 casa
+Variação do CPI-U vs. primeiro ano =
+VAR Base =
+    CALCULATE ( AVERAGE ( dim_calendario[cpi_u_media_anual] ), REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR Atual =
+    CALCULATE ( AVERAGE ( dim_calendario[cpi_u_media_anual] ), REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Último ano com preço] )
+RETURN
+    DIVIDE ( Atual - Base, Base )
+// CONTEXTO: cartão de referência da página de inflação — devolve +41,1%. É a régua
+// contra a qual +3,9% nominal vira −26,4% real.
+// AVERAGE sobre uma dimensão de grão anual: numa linha de ano existe um valor só, então
+// a média é ele mesmo. Fora de um ano específico o número perde sentido — e é por isso
+// que esta medida só aparece em cartão com ano fixado pelos dois CALCULATE.
+
+
+// =============================================================================
+// 06 MIX — share de faixa (nas duas bases) e de licenciamento
+//
+// A BASE REAL USA UMA SEGUNDA RELAÇÃO, INATIVA.
+// dim_faixa_preco se liga a fato_sets[sk_faixa_preco] (nominal, ATIVA) e a
+// fato_sets[sk_faixa_preco_real] (real, INATIVA). A inativa só acorda dentro de uma
+// medida que tem "(real, USD 2022)" no nome. Ou seja: ninguém troca de base
+// arrastando um campo — só uma medida que DECLARA a base consegue trocar.
+// É a mesma ideia da regra 2 lá em cima, implementada no modelo.
+// =============================================================================
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Participação da faixa no mix (nominal) =
+VAR SetsDaFaixa = [Sets no escopo de preço]
+VAR SetsDoRecorte =
+    CALCULATE ( [Sets no escopo de preço], REMOVEFILTERS ( dim_faixa_preco ) )
+RETURN
+    DIVIDE ( SetsDaFaixa, SetsDoRecorte )
+// CONTEXTO: coluna empilhada 100% por ano — a escada nominal. Com `ano` no eixo e
+// faixa na legenda, cada coluna soma 100% dentro do próprio ano.
+// REMOVEFILTERS ( dim_faixa_preco ) apaga a faixa do denominador mas MANTÉM o ano: é
+// isso que torna o share relativo ao ano da coluna, e não ao período todo. Apagar
+// dim_calendario junto daria o share sobre os 4.626 e nenhuma coluna somaria 100% —
+// erro comum e silencioso.
+
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Participação da faixa no mix (real, USD 2022) =
+CALCULATE (
+    [Participação da faixa no mix (nominal)],
+    USERELATIONSHIP ( dim_faixa_preco[sk_faixa_preco], fato_sets[sk_faixa_preco_real] )
+)
+// CONTEXTO: a escada real, ao lado da nominal. Mesma dimensão, mesmas faixas, mesma
+// ordenação — o que muda é por qual coluna da fato o filtro viaja.
+// USERELATIONSHIP desativa a relação nominal e ativa a real DENTRO deste CALCULATE.
+// Todo o resto do contexto (ano, escopo) segue igual, e o REMOVEFILTERS que está
+// dentro da medida interna continua valendo. Fora deste CALCULATE nada muda: a relação
+// volta a ser a nominal na medida seguinte.
+// É esta medida que mostra o achado 3: acima de US$ 50 sai de 38,6% em 2007 para
+// 37,8% em 2022 — praticamente parado, contra 17,7% → 37,8% na leitura nominal.
+
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Participação da faixa no primeiro ano (nominal) =
+CALCULATE (
+    [Participação da faixa no mix (nominal)],
+    REMOVEFILTERS ( dim_calendario ),
+    dim_calendario[ano] = [Primeiro ano com preço]
+)
+// CONTEXTO: base de comparação da escada nominal. Numa tabela por faixa, põe o mix de
+// 2007 ao lado do mix do ano da linha.
+
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Participação da faixa no primeiro ano (real, USD 2022) =
+CALCULATE (
+    [Participação da faixa no mix (nominal)],
+    REMOVEFILTERS ( dim_calendario ),
+    dim_calendario[ano] = [Primeiro ano com preço],
+    USERELATIONSHIP ( dim_faixa_preco[sk_faixa_preco], fato_sets[sk_faixa_preco_real] )
+)
+// CONTEXTO: base da escada real. Os três argumentos do CALCULATE agem juntos: dois
+// mexem no ano, o terceiro troca por qual coluna a faixa filtra.
+
+
+// Pasta: 06 Mix · Formato: Personalizado `+0.0" p.p.";-0.0" p.p."`
+Delta de participação vs. primeiro ano (nominal) =
+VAR Atual = [Participação da faixa no mix (nominal)]
+VAR Base = [Participação da faixa no primeiro ano (nominal)]
+RETURN
+    ( Atual - Base ) * 100
+// CONTEXTO: coluna de tabela e rótulo do cartão da escada. É diferença em PONTOS
+// PERCENTUAIS, não variação percentual — 4,0% para 14,5% é +10,5 p.p., não +262%.
+// Confundir os dois é o jeito mais rápido de perder credibilidade numa reunião.
+
+
+// Pasta: 06 Mix · Formato: Personalizado `+0.0" p.p.";-0.0" p.p."`
+Delta de participação vs. primeiro ano (real, USD 2022) =
+VAR Atual = [Participação da faixa no mix (real, USD 2022)]
+VAR Base = [Participação da faixa no primeiro ano (real, USD 2022)]
+RETURN
+    ( Atual - Base ) * 100
+// CONTEXTO: a coluna que carrega o achado 3. Na faixa de US$ 50 a 99,99 o nominal dá
+// +9,6 p.p. e o real dá −4,8 p.p.: a mesma faixa, duas histórias, uma inflação.
+
+
+// Pasta: 06 Mix · Formato: Número inteiro, separador de milhar
+Sets de construção =
+CALCULATE (
+    [Sets],
+    KEEPFILTERS ( dim_categoria[categoria] = "Normal" )
+)
+// CONTEXTO: toda a página de mix. Tira Gear, Books, Collection e companhia do
+// denominador — sem isso, `Miscellaneous` aparece como o maior grupo dos anos 2010
+// (42,5%), que é artefato de catch-all e não fato de negócio.
+
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Share licenciado =
+VAR Licenciados =
+    CALCULATE ( [Sets de construção], KEEPFILTERS ( dim_tema[flag_licenciado] = 1 ) )
+RETURN
+    DIVIDE ( Licenciados, [Sets de construção] )
+// CONTEXTO: coluna por década na página de mix. 0,0% nos anos 70 e 80; 36,9% nos 20.
+// Aqui é KEEPFILTERS e não filtro booleano puro: se alguém segmentar "só temas
+// próprios", a medida deve devolver 0%, não continuar mostrando os licenciados.
+
+
+// Pasta: 06 Mix · Formato: Porcentagem, 1 casa
+Share do tema no ano =
+VAR SetsDoTema = [Sets]
+VAR SetsDoAno = CALCULATE ( [Sets], REMOVEFILTERS ( dim_tema ) )
+RETURN
+    DIVIDE ( SetsDoTema, SetsDoAno )
+// CONTEXTO: barras de Top 10 temas de um ano. REMOVEFILTERS ( dim_tema ) tira só o
+// tema do denominador; o ano da página continua valendo.
+
+
+// =============================================================================
+// 07 INFLAÇÃO E CATEGORIA — a análise SECUNDÁRIA da peça
+// Todo visual construído com estas medidas carrega a ressalva de hedonia junto.
+// Ver `docs/qualidade-do-dado.md` seção 11 antes de citar qualquer número daqui.
+// =============================================================================
+
+// Pasta: 07 Inflação e categoria · Formato: Decimal, 3 casas
+CPI-U do ano =
+AVERAGE ( dim_calendario[cpi_u_media_anual] )
+// CONTEXTO: linha de referência num gráfico com `ano` no eixo. 2007 = 207,342;
+// 2022 = 292,655. Fora de um ano específico a média de um índice não significa nada.
+
+
+// Pasta: 07 Inflação e categoria · Formato: Decimal, 5 casas
+Fator de deflação (base 2022) =
+AVERAGE ( dim_calendario[fator_deflator_base2022] )
+// CONTEXTO: dica de ferramenta e página de metodologia — mostra QUANTO a inflação
+// move cada ano. 2007 = 1,41146; 2022 = 1,0.
+// Está aqui para transparência, NÃO para ser usado em medida: a deflação já está
+// materializada linha a linha em fato_sets[vl_preco_usd_2022].
+
+
+// Pasta: 07 Inflação e categoria · Formato: Decimal, 3 casas
+CPI de brinquedos do ano =
+CALCULATE (
+    AVERAGE ( dim_calendario[cpi_toys_media_anual] ),
+    KEEPFILTERS ( dim_calendario[flag_cpi_toys_disponivel] = 1 )
+)
+// CONTEXTO: série de brinquedos do BLS (`CUUR0000SERE01`). 2007 = 70,584; 2022 = 29,681.
+// CALCULATE restringe aos 45 anos em que a série existe. Sem esse KEEPFILTERS, os oito
+// anos de 1970 a 1977 entram como vazio e o gráfico desenha a linha caindo a zero no
+// começo — um ponto que não existe na fonte parecendo um dado.
+
+
+// Pasta: 07 Inflação e categoria · Formato: Decimal, 1 casa
+Índice CPI de brinquedos (real, primeiro ano = 100) =
+VAR BaseToys =
+    CALCULATE ( [CPI de brinquedos do ano], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR BaseCpi =
+    CALCULATE ( [CPI-U do ano], REMOVEFILTERS ( dim_calendario ), dim_calendario[ano] = [Primeiro ano com preço] )
+VAR RelativoAtual = DIVIDE ( [CPI de brinquedos do ano], [CPI-U do ano] )
+VAR RelativoBase = DIVIDE ( BaseToys, BaseCpi )
+RETURN
+    DIVIDE ( RelativoAtual, RelativoBase ) * 100
+// CONTEXTO: a segunda linha do gráfico de categoria. Devolve 29,8 em 2022 — o preço de
+// brinquedo em geral caiu 70% em poder de compra desde 2007.
+// Deflacionar um índice é dividi-lo pelo CPI-U e reindexar: é o que as quatro VAR fazem.
+// Os dois CALCULATE saem da linha do ano para buscar 2007; o resto acontece na linha.
+
+
+// Pasta: 07 Inflação e categoria · Formato: Decimal, 1 casa
+LEGO contra a categoria (primeiro ano = 100) =
+DIVIDE (
+    [Índice de preço por peça (real, primeiro ano = 100)],
+    [Índice CPI de brinquedos (real, primeiro ano = 100)]
+) * 100
+// CONTEXTO: a terceira linha do gráfico, e o número que precisa de ressalva. Devolve
+// 247,1 em 2022 — a LEGO se posicionou ~147% acima da própria categoria.
+// O índice é IDÊNTICO se calculado nas duas bases, porque o CPI-U cancela na razão.
+// Isso serve de checagem da conta — e não conserta a ressalva: o CPI de brinquedos é
+// ajustado hedonicamente e dominado por eletrônico. A leitura defensável é
+// "a marca se posicionou acima da categoria", nunca "ficou 147% mais cara".
+
+
+// =============================================================================
+// 08 QUALIDADE — números que sustentam as ressalvas e o teste de fumaça
+// As três primeiras são SEM ESCOPO de propósito: são elas que têm de bater com a origem.
+// =============================================================================
+
+// Pasta: 08 Qualidade · Formato: Moeda, 2 casas, símbolo US$
+Preço de lista somado (catálogo, nominal) =
+SUM ( fato_sets[vl_preco_usd] )
+// CONTEXTO: teste de fumaça da importação — US$ 262.068,09, igual à origem.
+// Nunca use como numerador de razão: não há denominador escopado que combine com ele.
+
+
+// Pasta: 08 Qualidade · Formato: Moeda, 2 casas, símbolo US$
+Preço de lista somado (catálogo, real USD 2022) =
+SUM ( fato_sets[vl_preco_usd_2022] )
+// CONTEXTO: teste de fumaça da coluna deflacionada — US$ 314.872,10.
+// Se der exatamente igual à nominal, a coluna veio vazia ou foi tipada errado.
+
+
+// Pasta: 08 Qualidade · Formato: Número inteiro, separador de milhar
+Peças somadas (catálogo) =
+SUM ( fato_sets[qt_pecas] )
+// CONTEXTO: teste de fumaça — 3.291.343. Os 3.924 nulos são ignorados pelo SUM, e é
+// isso que se quer: nulo é "não informado", não "zero peça".
+
+
+// Pasta: 08 Qualidade · Formato: Número inteiro, separador de milhar
+Minifigs somadas (catálogo) =
+SUM ( fato_sets[qt_minifigs] )
+// CONTEXTO: teste de fumaça (22.372) e cartão da página de qualidade.
+// É um PISO, não o número real: 54,5% da origem vinha vazio e virou zero na fato.
+
+
+// Pasta: 08 Qualidade · Formato: Número inteiro, separador de milhar
+Sets com preço terminado em .99 =
+SUM ( fato_sets[flag_preco_99] )
+// CONTEXTO: teste de fumaça (6.897) e numerador do share de ponto psicológico.
+// A coluna agora vem pronta do SQL, comparada em centavos inteiros — não é mais
+// derivada no Power Query.
+
+
+// Pasta: 08 Qualidade · Formato: Porcentagem, 1 casa
+Share de preços terminados em .99 =
+DIVIDE ( [Sets com preço terminado em .99], [Sets com preço] )
+// CONTEXTO: cartão da página da escada — 98,8% no catálogo com preço, e subindo:
+// 96,9% nos anos 2000 contra 99,5% nos 2010.
+// É a prova de que a empresa NÃO reprecificou a linha: o ponto de preço enrijeceu.
+// Só faz sentido na base nominal — ninguém deflaciona uma etiqueta.
+
+
+// Pasta: 08 Qualidade · Formato: Número inteiro
+Pontos de preço distintos =
+CALCULATE (
+    DISTINCTCOUNT ( fato_sets[vl_preco_usd] ),
+    KEEPFILTERS ( fato_sets[flag_tem_preco] = 1 )
+)
+// CONTEXTO: ao lado do cartão acima — 141 valores distintos em 6.982 sets com preço.
+// Os dois juntos são o argumento contra plotar histograma de preço: sairia um pente.
+
+
+// Pasta: 08 Qualidade · Formato: Porcentagem, 1 casa
+Cobertura de idade informada =
+VAR ComIdade = CALCULATE ( [Sets], KEEPFILTERS ( dim_faixa_etaria[ordem_faixa] > 0 ) )
+RETURN
+    DIVIDE ( ComIdade, [Sets] )
+// CONTEXTO: cartão das páginas de cobertura e de qualidade — 36,8% no catálogo.
+// É a ressalva que derruba a leitura forte: célula vazia pode ser falta de dado.
+
+
+// =============================================================================
+// 09 RÓTULOS — texto calculado. Título que se escreve sozinho não mente quando o
+// filtro muda; título digitado à mão, sim. E aqui ele carrega também a BASE.
+// =============================================================================
+
+// Pasta: 09 Rótulos · Formato: Texto
+Título de escopo — preço nominal =
+"Escopo: sets Normal, com preço, 20 peças ou mais, "
+    & FORMAT ( [Primeiro ano com preço], "0" ) & "–" & FORMAT ( [Último ano com preço], "0" )
+    & " · " & FORMAT ( [Sets no escopo de preço], "#,##0" ) & " sets"
+    & " · USD NOMINAL de lançamento, sem correção por inflação"
+// CONTEXTO: título de todo visual da base nominal, via Formatar visual > Geral >
+// Título > fx > Formatar por: Valor do campo. O texto acompanha o filtro da página.
+// A máscara do FORMAT se escreve SEMPRE na forma invariante — vírgula de milhar e
+// ponto decimal ("#,##0") — e o Power BI imprime com os separadores da cultura do
+// modelo: 4.626 num modelo pt-BR. Escrevê-la já em pt-BR ("#.##0") é o erro: FORMAT
+// leria o "." como separador decimal.
+
+
+// Pasta: 09 Rótulos · Formato: Texto
+Título de escopo — preço real =
+"Escopo: sets Normal, com preço, 20 peças ou mais, "
+    & FORMAT ( [Primeiro ano com preço], "0" ) & "–" & FORMAT ( [Último ano com preço], "0" )
+    & " · " & FORMAT ( [Sets no escopo de preço], "#,##0" ) & " sets"
+    & " · USD CONSTANTES DE 2022, deflacionado pelo CPI-U (BLS)"
+// CONTEXTO: título de todo visual da base real. As duas versões existem porque
+// nenhum visual de preço pode aparecer sem dizer em qual das duas está — a mesma
+// série dá índice 103,9 numa e 73,6 na outra.
+
+
+// Pasta: 09 Rótulos · Formato: Texto
+Título de escopo — catálogo =
+"Escopo: catálogo completo, 1970–2022 · "
+    & FORMAT ( [Sets], "#,##0" ) & " sets · sem filtro de preço"
+// CONTEXTO: título de todo visual de mix, rotação e cobertura. Existe para que a
+// diferença entre 18.457 e 4.626 esteja escrita na tela, e não só na cabeça de quem
+// montou o relatório.
+
+
+// Pasta: 09 Rótulos · Formato: Texto
+Sentinela de escopo =
+VAR SetsVisiveis = [Sets]
+VAR SetsNoEscopo = [Sets no escopo de preço]
+RETURN
+    IF (
+        SetsVisiveis = SetsNoEscopo,
+        "Escopo de preço confirmado: " & FORMAT ( SetsNoEscopo, "#,##0" ) & " sets",
+        "ATENÇÃO — escopo misto nesta página: " & FORMAT ( SetsVisiveis, "#,##0" )
+            & " sets visíveis contra " & FORMAT ( SetsNoEscopo, "#,##0" ) & " no escopo de preço"
+    )
+// CONTEXTO: cartão pequeno no rodapé de cada página de preço, que tem filtro de página
+// flag_escopo_pricing = 1. Com o filtro no lugar, as duas medidas coincidem e o cartão
+// confirma. Se alguém tirar o filtro, ele denuncia na hora, com os dois números.
+// É a última linha de defesa: as medidas já se protegem sozinhas, mas nada impede que
+// uma contagem de catálogo seja posta ao lado de um preço no mesmo visual.

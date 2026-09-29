@@ -1,0 +1,106 @@
+{
+  "name": "Lego Analytics - pricing (claro)",
+  "dataColors": [
+    "#2A78D6",
+    "#EB6834",
+    "#1BAF7A",
+    "#EDA100",
+    "#E87BA4",
+    "#008300",
+    "#4A3AA7",
+    "#E34948"
+  ],
+  "background": "#FCFCFB",
+  "backgroundLight": "#F9F9F7",
+  "backgroundNeutral": "#E1E0D9",
+  "foreground": "#0B0B0B",
+  "foregroundNeutralSecondary": "#52514E",
+  "foregroundNeutralTertiary": "#898781",
+  "tableAccent": "#2A78D6",
+  "good": "#0CA30C",
+  "neutral": "#898781",
+  "bad": "#D03B3B",
+  "maximum": "#0D366B",
+  "center": "#3987E5",
+  "minimum": "#CDE2FB",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#0B0B0B"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 11,
+      "color": "#0B0B0B"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#52514E"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 36,
+      "color": "#0B0B0B"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FCFCFB" } },
+            "transparency": 0
+          }
+        ],
+        "border": [{ "show": false }],
+        "title": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#0B0B0B" } },
+            "background": { "solid": { "color": "#FCFCFB" } },
+            "alignment": "left",
+            "fontSize": 12
+          }
+        ],
+        "categoryAxis": [
+          {
+            "show": true,
+            "labelColor": { "solid": { "color": "#898781" } },
+            "gridlineShow": false,
+            "fontSize": 10
+          }
+        ],
+        "valueAxis": [
+          {
+            "show": true,
+            "labelColor": { "solid": { "color": "#898781" } },
+            "gridlineShow": true,
+            "gridlineColor": { "solid": { "color": "#E1E0D9" } },
+            "gridlineStyle": "solid",
+            "gridlineThickness": 1,
+            "fontSize": 10
+          }
+        ],
+        "labels": [
+          {
+            "show": false,
+            "color": { "solid": { "color": "#52514E" } },
+            "fontSize": 10
+          }
+        ],
+        "legend": [
+          {
+            "show": true,
+            "position": "Top",
+            "labelColor": { "solid": { "color": "#52514E" } },
+            "fontSize": 10,
+            "showTitle": false
+          }
+        ]
+      }
+    }
+  }
+}
