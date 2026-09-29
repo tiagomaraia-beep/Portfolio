@@ -6,7 +6,7 @@ Finanças, dados e IA aplicada. Pricing e FP&A são o centro; SQL, Power BI, Pyt
 
 | # | Projeto | O que mostra | Ferramentas |
 |---|---|---|---|
-| 01 | [Pricing analytics de um catálogo de 18.457 produtos](01-pricing-analytics/) | Preço real contra nominal, prêmio de licença, escada de preços e mix, com o que o dado não permite afirmar. [Dashboard interativo](https://claude.ai/artifact/B6vghWEKUke5JTPskgJAQa) | SQL (SQLite), esquema estrela, DAX |
+| 01 | [Pricing analytics de um catálogo de 18.457 produtos](01-pricing-analytics/) | Preço real contra nominal, prêmio de licença, escada de preços e mix, com o que o dado não permite afirmar. [Explorador de sets](https://tiagomaraia-beep.github.io/Portifolio/01-pricing-analytics/dashboard/) · [dashboard de pricing](https://claude.ai/artifact/B6vghWEKUke5JTPskgJAQa) | SQL (SQLite), esquema estrela, DAX |
 | 02 | [Business cases de investimento](02-business-cases/) | Três decisões de investimento em padrão FP&A: VPL, TIR, payback, cenários e regime tributário | Excel, agentes de IA para modelagem e validação |
 | 03 | [Agentes de IA para serviços financeiros](03-agentes-ia-financial-services/) | Sistema multiagente que classifica risco de transações e redige o relatório de compliance, com aprovação humana e trilha de auditoria | Python, Pydantic, LLM |
 | 04 | [Facility Digital](04-facility-digital/) | Sistema de gestão de estacionamento estruturado do zero e construído com um agente de IA sob revisão humana | Agente de IA, testes automatizados, revisão por pull request |

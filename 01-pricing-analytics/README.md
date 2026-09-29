@@ -39,6 +39,33 @@ A apuração completa, com as cinco perguntas, está em [`docs/achados.md`](docs
 
 ---
 
+## Os dois dashboards
+
+| Dashboard | Para quê | Onde |
+|---|---|---|
+| **Explorador de sets** | Navegar pelo catálogo: escolher uma coleção, buscar um set, ver a foto e os detalhes, e comparar os maiores, os mais raros e os mais divertidos | [`dashboard/index.html`](dashboard/) · [abrir no navegador](https://tiagomaraia-beep.github.io/Portifolio/01-pricing-analytics/dashboard/) |
+| **Pricing do catálogo** | Os três achados de preço (real × nominal, prêmio de licença, escada de preços) em gráficos | [claude.ai/artifact/B6vghWEKUke5JTPskgJAQa](https://claude.ai/artifact/B6vghWEKUke5JTPskgJAQa) |
+
+### Como usar o explorador
+
+- **Abrir:** pelo link acima, ou baixando `dashboard/index.html` e abrindo no navegador. É um arquivo único, sem instalação: os 18.457 sets estão dentro dele. As fotos vêm do Brickset, então pedem internet.
+- **Filtros** (valem para tudo na tela): coleção, busca por nome ou código do set, intervalo de anos, tipo e "só com foto". O padrão mostra só **sets de montar** (`category = 'Normal'`), o mesmo recorte das análises em SQL; "Todos os tipos" inclui brindes, livros, chaveiros e afins.
+- **Indicadores:** número de sets, total de peças, preço médio (só entre os sets que têm preço) e total de minifiguras, sempre sobre o filtro atual. Abaixo, os lançamentos por ano.
+- **Abas:**
+  - *Explorar* — a lista inteira, ordenável por ano, peças, preço ou nome.
+  - *Maiores* — mais peças, mais caros, mais minifiguras e as maiores coleções por total de peças.
+  - *Raros* — pelo índice de raridade, descrito abaixo.
+  - *Divertidos* — sets agrupados por palavra no nome (dragões, piratas, ninja, robôs, espaço, dinossauros, comida, Natal e outros). Há 101 sets com "dragon" no nome.
+- **Detalhe:** clicar num set abre a foto, a ficha (ano, peças, minifiguras, preço de lançamento, idade mínima, grupo, tipo, raridade), o link para o Brickset e os maiores sets da mesma coleção.
+
+### A lógica por trás
+
+- **Mesma base das análises:** o explorador lê o `data/lego_sets.csv`. Preço é o de lançamento no varejo dos EUA, em **dólar nominal**. O explorador não deflaciona; a série real está no SQL (`sql/04-deflacao-e-serie-real.sql`) e no dashboard de pricing.
+- **Índice de raridade (0 a 4):** mede **escassez de produção**, não valor de mercado. Soma sinais de que um set saiu em pouca quantidade: tema pequeno, brinde ou exclusivo, tema que durou um ano só e lançamento até 1985. Um set com índice 3 ou mais ganha o selo "raro".
+- **Preço médio só com preço:** a média ignora os sets sem preço, e o rótulo diz quantos entraram. Antes de 2000 quase não há preço na base (ver `docs/qualidade-do-dado.md`), então uma média de coleção antiga pode vir de poucos sets.
+
+---
+
 ## O que esta peça demonstra
 
 | | |
@@ -66,6 +93,7 @@ docs/dicionario-de-dados.md   o contrato: tabelas, chaves, cardinalidades
 docs/modelo-powerbi.md        o modelo em estrela e o porquê de cada decisão
 docs/dashboard-spec.md        as oito páginas do relatório e a paleta validada
 docs/passo-a-passo-powerbi.md como reproduzir no Power BI Desktop
+dashboard/index.html          o explorador de sets (arquivo único)
 sql/                          00 carga · 01 qualidade · 02 estrela · 03 análises · 04 deflação
 exports/                      os sete CSV que alimentam o relatório
 dax/medidas.dax               as 66 medidas
