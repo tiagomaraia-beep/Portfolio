@@ -55,7 +55,7 @@ A apuração completa, com as cinco perguntas, está em [`docs/achados.md`](docs
   - *Explorar* — a lista inteira, ordenável por ano, peças, preço ou nome.
   - *Maiores* — mais peças, mais caros, mais minifiguras e as maiores coleções por total de peças.
   - *Raros* — pelo índice de raridade, descrito abaixo.
-  - *Divertidos* — sets agrupados por palavra no nome (dragões, piratas, ninja, robôs, espaço, dinossauros, comida, Natal e outros). Há 101 sets com "dragon" no nome.
+  - *Divertidos* — sets agrupados por palavra no nome (dragões, piratas, ninja, robôs, espaço, dinossauros, comida, Natal e outros). Há 101 sets de montar com "dragon" no nome (125 contando todos os tipos).
 - **Detalhe:** clicar num set abre a foto, a ficha (ano, peças, minifiguras, preço de lançamento, idade mínima, grupo, tipo, raridade), o link para o Brickset e os maiores sets da mesma coleção.
 
 ### A lógica por trás
