@@ -11,7 +11,6 @@ Finanças, dados e IA aplicada. Sou analista financeiro: modelagem, business cas
 | 02 | [Business cases de investimento](02-business-cases/) | Três decisões de investimento em padrão FP&A: VPL, TIR, payback, cenários, regime tributário e risco de contrato | Excel, agentes de IA para modelagem e validação |
 | 03 | [Agentes de IA para serviços financeiros](03-agentes-ia-financial-services/) | Sistema multiagente que classifica risco de transações e redige o relatório de compliance, com aprovação humana e trilha de auditoria | Python, Pydantic, LLM |
 | 04 | [Facility Digital](04-facility-digital/) | Sistema de gestão de estacionamento estruturado do zero e construído com um agente de IA sob revisão humana | Agente de IA, testes automatizados, revisão por pull request |
-| 05 | [Campanha segmentada](https://github.com/tiagomaraia-beep/Advanced-Analytics-Projects) | Qual oferta mandar a cada cliente: uma regressão aplicada fora da faixa refeita como receita esperada por oferta | Power BI, DAX, Python |
 
 ## Por onde começar
 

@@ -21,7 +21,7 @@ O sistema em si não é público, porque a wiki guarda também a minha vida pess
 | [Compra de estacionamento](../02-business-cases/) | Regime tributário ano a ano, risco de renovação do contrato, preço máximo do ponto | Comprar o ponto e o terreno, porque o contrato vence em 2 anos; validar a receita antes de negociar |
 | [Locação de veículos](../02-business-cases/) | Modelo de 5 anos com revenda da frota, Simples mês a mês e economia por carro | Investir, desde que o ticket se confirme: a folga é de 7% na receita por carro |
 | [Pricing de catálogo](../01-pricing-analytics/) | Dois agentes em contrato (SQL → Power BI), 66 medidas DAX | O preço subiu por mix no topo, não por reprecificação |
-| [Campanha segmentada](https://github.com/tiagomaraia-beep/Advanced-Analytics-Projects) | Diagnóstico de extrapolação e nova alocação por receita esperada | Suéter para 95 clientes e teste A/B da oferta premium |
+| Campanha segmentada | Diagnóstico de extrapolação e nova alocação por receita esperada | Suéter para 95 clientes e teste A/B da oferta premium |
 | [Agentes para compliance](../03-agentes-ia-financial-services/) | Dois agentes para comunicação de atividade suspeita | Uma pessoa aprova entre a análise e a redação |
 | [Facility Digital](../04-facility-digital/) | Construção de um sistema de gestão de estacionamentos | Decisões de produto, documentadas por marco |
 
