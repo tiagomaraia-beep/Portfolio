@@ -6,6 +6,10 @@ O sistema em si não é público, porque a wiki guarda também a minha vida pess
 
 ## Arquitetura
 
+Os três fluxogramas do sistema — a memória, o laço de um agente agendado e os
+subagentes sob demanda — estão em **[arquitetura.md](arquitetura.md)**.
+
+
 - **Duas classes de agente.** Os *agendados* acordam sozinhos, leem o que têm para fazer, fazem e anotam o resultado: busca de vaga, manutenção da wiki e desenvolvimento de produto. Os *sob demanda* são chamados pelo assunto do pedido, um por ferramenta: Excel, SQL, Python e Power BI.
 - **Memória fora do modelo.** O agente não lembra de nada entre uma execução e outra. Cada um tem quatro arquivos: *briefing* (escopo e limites), *fila* (o que fazer), *diário* (o que foi feito) e *aprendizados* (regras descobertas na prática, que passam a valer na execução seguinte). O conhecimento de domínio fica na wiki, com a fonte de cada fato.
 - **Prompt fino, wiki grossa.** O prompt de cada agente só diz onde ler. Para mudar o comportamento, edita-se o briefing.
