@@ -4,6 +4,21 @@ Finanças, dados e IA aplicada. Sou analista financeiro: modelagem, business cas
 
 **Contato:** [linkedin.com/in/tiago-maraia](https://www.linkedin.com/in/tiago-maraia)
 
+```mermaid
+flowchart TB
+    M["00 · Sistema de agentes — o método"]
+    A["01 · Pricing analytics de 18.457 produtos"]
+    B["02 · Business cases de investimento"]
+    D["04 · Facility Digital — sistema em operação"]
+    C["03 · Agentes para serviços financeiros"]
+
+    M -->|SQL, esquema estrela e DAX| A
+    M -->|um agente modela, outro valida| B
+    M -->|escreve o código, eu reviso e aprovo| D
+    C -.->|credencial em IA para finanças, não produção daqui| M
+```
+
+
 | # | Projeto | O que mostra | Ferramentas |
 |---|---|---|---|
 | 00 | [Sistema de agentes de IA](00-sistema-de-agentes/) | Oito agentes que modelam, validam e documentam, com uma wiki como memória e aprovação humana; os projetos 01, 02 e 04 são o que ele produziu | Claude Code, Obsidian |
