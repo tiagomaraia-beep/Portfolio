@@ -2,11 +2,11 @@
 
 Um sistema de gestão para uma operação de estacionamento, estruturado do zero e construído com um agente de IA que programa sob a minha direção e revisão.
 
-| 13 de 23 | 30 | ~290 | 1 |
+| 14 de 23 | 30+ | ~290 | 1 |
 |---|---|---|---|
-| marcos do roteiro concluídos | mudanças revisadas e aprovadas em dez dias | testes automatizados rodando a cada mudança | unidade-piloto em operação |
+| marcos do roteiro concluídos | mudanças revisadas e aprovadas desde 19 de setembro | testes automatizados rodando a cada mudança | unidade-piloto em operação |
 
-*Números de setembro de 2026.*
+*Números de 7 de outubro de 2026.*
 
 ## Projeto
 
