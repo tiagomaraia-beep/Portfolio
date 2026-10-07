@@ -26,8 +26,12 @@ subagentes sob demanda — estão em **[arquitetura.md](arquitetura.md)**.
 | [Locação de veículos](../02-business-cases/) | Modelo de 5 anos com revenda da frota, Simples mês a mês e economia por carro | Investir, desde que o ticket se confirme: a folga é de 7% na receita por carro |
 | [Pricing de catálogo](../01-pricing-analytics/) | Dois agentes em contrato (SQL → Power BI), 66 medidas DAX | O preço subiu por mix no topo, não por reprecificação |
 | Campanha segmentada | Diagnóstico de extrapolação e nova alocação por receita esperada | Suéter para 95 clientes e teste A/B da oferta premium |
-| [Agentes para compliance](../03-agentes-ia-financial-services/) | Dois agentes para comunicação de atividade suspeita | Uma pessoa aprova entre a análise e a redação |
 | [Facility Digital](../04-facility-digital/) | Construção de um sistema de gestão de estacionamentos | Decisões de produto, documentadas por marco |
+
+**O que não saiu daqui.** O projeto [03](../03-agentes-ia-financial-services/) é da especialização
+*Agentic AI for Financial Services* e tem agentes próprios, escritos para o curso: está no portfólio como
+IA aplicada a finanças com credencial, não como produção deste sistema. O [04](../04-facility-digital/) é o
+contrário — é este método aplicado a software que roda em operação real.
 
 ## O que a validação encontrou
 

@@ -75,6 +75,13 @@ A apuração completa, com as cinco perguntas, está em [`docs/achados.md`](docs
 | **DAX** | 66 medidas, contexto de filtro explicado medida a medida, sem inteligência de tempo (e o porquê) |
 | **Rigor analítico** | escopo declarado em flag, duas bases de preço nunca misturadas, e uma página inteira sobre os limites do dado |
 
+**Como foi feito.** A apuração foi dividida entre dois agentes do [meu sistema](../00-sistema-de-agentes/),
+em contrato: um escreveu a camada SQL — perfilagem de qualidade, esquema estrela, análises e deflação —, o
+outro a camada de relatório, com as 66 medidas e o passo a passo; eu defini as perguntas, o escopo de preço
+e o que podia ser afirmado em cada corte. Nenhum número subiu para cá antes de o teste de fumaça do passo 7
+bater, porque modelo que duplica linha produz dashboard bonito e errado, e o erro de locale descrito em
+*Reproduzir* não dá nenhum aviso: o relatório carrega e os números saem 100× maiores.
+
 **A decisão de modelagem que eu defenderia numa entrevista:** *escopo e base são
 propriedade da métrica, não do visual.* Não existe neste modelo uma medida de preço sem
 escopo, nem uma medida de preço sem `(nominal)` ou `(real, USD 2022)` no nome, nem coluna

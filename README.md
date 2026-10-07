@@ -1,12 +1,12 @@
 # Portfólio — Tiago Maraia de Alcantara
 
-Finanças, dados e IA aplicada. Sou analista financeiro: modelagem, business cases e pricing são o centro. SQL, Power BI e Python são a base que me permite operar um sistema próprio de agentes de IA, com que todos os projetos abaixo foram feitos. Cada projeto responde a uma pergunta de negócio e mostra como a resposta foi verificada.
+Finanças, dados e IA aplicada. Sou analista financeiro: modelagem, business cases e pricing são o centro. SQL, Power BI e Python são a base que me permite operar um sistema próprio de agentes de IA, com que os projetos abaixo foram feitos. Cada projeto responde a uma pergunta de negócio e mostra como a resposta foi verificada.
 
 **Contato:** [linkedin.com/in/tiago-maraia](https://www.linkedin.com/in/tiago-maraia)
 
 | # | Projeto | O que mostra | Ferramentas |
 |---|---|---|---|
-| 00 | [Sistema de agentes de IA](00-sistema-de-agentes/) | Oito agentes que modelam, validam e documentam, com uma wiki como memória e aprovação humana; os projetos abaixo são o que ele produziu | Claude Code, Obsidian |
+| 00 | [Sistema de agentes de IA](00-sistema-de-agentes/) | Oito agentes que modelam, validam e documentam, com uma wiki como memória e aprovação humana; os projetos 01, 02 e 04 são o que ele produziu | Claude Code, Obsidian |
 | 01 | [Pricing analytics de um catálogo de 18.457 produtos](01-pricing-analytics/) | Preço real contra nominal, prêmio de licença, escada de preços e mix, com o que o dado não permite afirmar. [Explorador de sets](https://tiagomaraia-beep.github.io/Portifolio/01-pricing-analytics/dashboard/) · [dashboard de pricing](https://claude.ai/artifact/B6vghWEKUke5JTPskgJAQa) | SQL (SQLite), esquema estrela, DAX |
 | 02 | [Business cases de investimento](02-business-cases/) | Três decisões de investimento em padrão FP&A: VPL, TIR, payback, cenários, regime tributário e risco de contrato | Excel, agentes de IA para modelagem e validação |
 | 03 | [Agentes de IA para serviços financeiros](03-agentes-ia-financial-services/) | Sistema multiagente que classifica risco de transações e redige o relatório de compliance, com aprovação humana e trilha de auditoria | Python, Pydantic, LLM |
