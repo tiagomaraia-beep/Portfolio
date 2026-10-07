@@ -43,7 +43,7 @@ A apuração completa, com as cinco perguntas, está em [`docs/achados.md`](docs
 
 | Dashboard | Para quê | Onde |
 |---|---|---|
-| **Explorador de sets** | Navegar pelo catálogo: escolher uma coleção, buscar um set, ver a foto e os detalhes, e comparar os maiores, os mais raros e os mais divertidos | [`dashboard/index.html`](dashboard/) · [abrir no navegador](https://tiagomaraia-beep.github.io/Portifolio/01-pricing-analytics/dashboard/) |
+| **Explorador de sets** | Navegar pelo catálogo: escolher uma coleção, buscar um set, ver a foto e os detalhes, e comparar os maiores, os mais raros e os mais divertidos | [`dashboard/index.html`](dashboard/) · [abrir no navegador](https://tiagomaraia-beep.github.io/Portfolio/01-pricing-analytics/dashboard/) |
 | **Pricing do catálogo** | Os três achados de preço (real × nominal, prêmio de licença, escada de preços) em gráficos | [claude.ai/artifact/B6vghWEKUke5JTPskgJAQa](https://claude.ai/artifact/B6vghWEKUke5JTPskgJAQa) |
 
 ### Como usar o explorador
